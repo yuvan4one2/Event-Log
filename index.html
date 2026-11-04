@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Event Shoot Log</title>
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one working sheet. Sticky bar holds the frame counter and stage tabs; one stage shows at a time; the Record tab is the paper copy. */
+:root{
+  --bg:#ECEFEB; --surface:#FAFBF9; --field:#FFFFFF; --ink:#141C17; --muted:#58645C;
+  --line:#D2D9D3; --line-strong:#9AA79F; --accent:#0E6B5A; --accent-ink:#FFFFFF; --accent-soft:#DCEBE5; --warn:#A8500B;
+  --display:'Bricolage Grotesque','Segoe UI',system-ui,sans-serif;
+  --body:'IBM Plex Sans','Segoe UI',system-ui,sans-serif;
+  --mono:'IBM Plex Mono',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0F1511; --surface:#161D19; --field:#1C2520; --ink:#E5EBE6; --muted:#94A198;
+    --line:#2A352E; --line-strong:#5B6A60; --accent:#4FC3A8; --accent-ink:#07140F; --accent-soft:#1B2E27; --warn:#E39A52;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0F1511; --surface:#161D19; --field:#1C2520; --ink:#E5EBE6; --muted:#94A198;
+  --line:#2A352E; --line-strong:#5B6A60; --accent:#4FC3A8; --accent-ink:#07140F; --accent-soft:#1B2E27; --warn:#E39A52;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);-webkit-text-size-adjust:100%}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:780px;margin-inline:auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* sticky bar */
+.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line)}
+.bar-top{display:flex;align-items:center;gap:12px;padding-block:12px 10px;flex-wrap:wrap}
+.brand{font:700 20px/1 var(--display);letter-spacing:-.01em;margin-right:auto}
+.evsel{min-width:0;max-width:100%;flex:1 1 180px;order:3}
+.counter{font:500 12px var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.counter b{color:var(--ink);font-weight:500}
+.meter{height:3px;background:var(--line)}
+.meter i{display:block;height:100%;width:0;background:var(--accent);transition:width .25s}
+.tabs{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none;padding-block:8px}
+.tabs::-webkit-scrollbar{display:none}
+.tab{flex:0 0 auto;border:1px solid transparent;background:none;border-radius:6px;padding:6px 12px;cursor:pointer;display:flex;flex-direction:column;align-items:flex-start;gap:0;min-width:72px}
+.tab span{font-weight:600;font-size:14px}
+.tab small{font:500 11px var(--mono);color:var(--muted);letter-spacing:.04em;min-height:14px}
+.tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+.tab[aria-selected="true"] small{color:inherit;opacity:.85}
+.tab:not([aria-selected="true"]):hover{border-color:var(--line-strong)}
+
+/* panels */
+main{padding-block:20px 96px}
+h2{font:700 26px/1.15 var(--display);letter-spacing:-.01em;margin:0 0 4px;text-wrap:balance}
+.lead{color:var(--muted);margin:0 0 20px;max-width:62ch}
+.grp{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 16px 10px;margin-bottom:14px}
+.grp-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding-block:10px 4px}
+.grp-h h3{font:600 15px/1.3 var(--display);margin:0;letter-spacing:.005em}
+.grp-h .n{font:500 12px var(--mono);color:var(--muted)}
+.grp-h .n.full{color:var(--accent)}
+.item{display:flex;gap:12px;align-items:flex-start;padding-block:9px;border-top:1px solid var(--line);cursor:pointer;min-height:44px}
+.grp-h + .item{border-top:0}
+.item input{appearance:none;-webkit-appearance:none;flex:0 0 22px;width:22px;height:22px;margin:1px 0 0;border:1.5px solid var(--line-strong);border-radius:5px;background:var(--field);display:grid;place-content:center;cursor:pointer}
+.item input:checked{background:var(--accent);border-color:var(--accent)}
+.item input:checked::after{content:"";width:10px;height:5px;border-left:2px solid var(--accent-ink);border-bottom:2px solid var(--accent-ink);transform:translateY(-1px) rotate(-45deg)}
+.item span{min-width:0;overflow-wrap:anywhere}
+.item input:checked + span{color:var(--muted)}
+.item .rm{margin-left:auto;border:0;background:none;color:var(--muted);cursor:pointer;padding:2px 8px;border-radius:4px;font-size:13px}
+.item .rm:hover{color:var(--warn)}
+.addrow{display:flex;gap:8px;padding-top:10px;border-top:1px solid var(--line);flex-wrap:wrap}
+.addrow input{flex:1 1 200px;min-width:0}
+.sect{margin:26px 0 10px;display:flex;align-items:baseline;gap:10px}
+.sect h3{font:600 15px var(--display);margin:0}
+.sect p{margin:0;color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 16px;margin-bottom:6px}
+.f{min-width:0}
+.f.wide{grid-column:1 / -1}
+.f label{display:block;font-size:13px;font-weight:500;margin-bottom:5px}
+.f label i{font:500 11px var(--mono);color:var(--muted);font-style:normal;margin-left:4px}
+input[type=text],input[type=tel],input[type=date],input[type=time],input[type=number],select,textarea{width:100%;min-width:0;background:var(--field);border:1px solid var(--line-strong);border-radius:7px;padding:9px 11px;min-height:42px}
+textarea{resize:vertical;line-height:1.45}
+::placeholder{color:var(--muted);opacity:.75}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{border:1px solid var(--line-strong);background:var(--field);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:500;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.hint{font-size:13px;color:var(--muted);margin:8px 0 0}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:10px 16px;font-weight:600;cursor:pointer;min-height:42px}
+.btn.ghost{background:none;color:var(--ink);border-color:var(--line-strong)}
+.btn.danger{color:var(--warn);border-color:var(--warn);background:none}
+.nav{display:flex;justify-content:space-between;gap:10px;margin-top:22px}
+.rec-actions{display:flex;gap:10px;flex-wrap:wrap;margin:6px 0 4px}
+.paper{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:28px max(16px,4vw);margin-top:16px}
+.copybox{width:100%;min-height:120px;margin-top:10px;font:12px/1.4 var(--mono)}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:8px;font-size:14px;z-index:20;max-width:calc(100vw - 32px)}
+.saved{font:500 11px var(--mono);color:var(--muted);letter-spacing:.04em;margin-top:18px}
+@media (max-width:560px){.grid{grid-template-columns:minmax(0,1fr)}h2{font-size:23px}}
+@media (prefers-reduced-motion:reduce){.meter i{transition:none}}
+
+@media print{
+  :root:root{--bg:#fff;--surface:#fff;--field:#fff;--ink:#111;--muted:#555;--line:#c9cfca;--accent:#0a5a4c;color-scheme:light}
+  body::before,.bar,.nav,.noprint,.toast{display:none!important}
+  main{padding:0}
+  .wrap{max-width:none;padding:0}
+  .paper{border:0;padding:0;margin:0}
+}
+</style>
+</head>
+<body>
+<header class="bar">
+  <div class="wrap">
+    <div class="bar-top">
+      <div class="brand">Event Shoot Log</div>
+      <div class="counter" id="counter" aria-live="polite"></div>
+      <select id="evSel" class="evsel" aria-label="Choose event"></select>
+    </div>
+  </div>
+  <div class="meter"><i id="meterFill"></i></div>
+  <div class="wrap"><nav class="tabs" id="tabs" role="tablist" aria-label="Stages"></nav></div>
+</header>
+<main><div class="wrap"><section id="panel" role="tabpanel" tabindex="-1"></section></div></main>
+<div class="toast" id="toast" role="status" hidden></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script>
+/* Standalone build: plain browser downloads replace the Claude viewer's save capability. */
+if(!window.claude){window.claude={use:function(n){return Promise.resolve(n==='downloads'?{save:function(o){return new Promise(function(res){var b=(o.data instanceof Blob)?o.data:new Blob([o.data],{type:'text/html'});var u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=o.filename;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u)},4000);res({status:'saved'})})}}:null)}}}
+</script>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s)};
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})};
+
+/* ---------- content ---------- */
+var TYPES={
+ '':{label:'Not chosen yet',moments:['Venue and decor details','Key people and VIPs','Main activity or ceremony','Guest candids','Group photo','Closing moments']},
+ wedding:{label:'Wedding',moments:['Details: rings, outfits, invitation, decor','Getting ready (both sides)','Ceremony and rituals','Ring or garland exchange','Family group portraits','Couple portraits','Reception entry','Speeches and toasts','Cake cutting','First dance','Guest candids','Farewell']},
+ corporate:{label:'Corporate event',moments:['Branding, banners and sponsor boards','Venue wide shots','Speakers on stage','Audience reactions','Awards and handshakes','Networking candids','Product or booth displays','Leadership group photo']},
+ party:{label:'Birthday / family party',moments:['Decor and cake table','Guest of honour portraits','Cake cutting','Games and activities','Kids candids','Gifts and surprises','Family group photos','Final group photo']},
+ concert:{label:'Concert / stage show',moments:['Stage wide with lighting','Performers close-ups','Crowd energy and hands up','Lighting peaks and effects','Backstage or soundcheck (if allowed)','Artist portraits (if allowed)','Encore and finale']},
+ conference:{label:'Conference / seminar',moments:['Registration and entrance','Keynote speaker','Panel discussions','Q and A from the audience','Booths and networking','Attendee candids','Branding and signage','Group photo']},
+ other:{label:'Other',moments:['Venue and details','Key people and VIPs','Main activity','Candids','Group photo','Closing moments']}
+};
+/* cond: video, drone, second, outdoor, indoor, type:a,b, not:a,b */
+var GROUPS={
+pack:[
+ {t:'Cameras and lenses',items:[
+  ['p1','Main camera body, tested'],['p2','Backup camera body'],['p3','Wide zoom for venue and groups'],
+  ['p4','Standard or telephoto zoom for candids and stage'],['p5','Fast prime (35mm or 50mm, f/1.8 or faster) for low light'],
+  ['p6','85mm portrait or macro lens for rings and details','type:wedding,party'],['p7','Lens hoods, caps, clean filters'],
+  ['p8','Polarizer and ND filter','outdoor']]},
+ {t:'Cards and power',items:[
+  ['p10','Memory cards, 3 to 4 times what you expect to use'],['p11','Batteries fully charged (3 or more for a full day)'],
+  ['p12','Chargers and an extension cord'],['p13','Power bank'],['p14','Card wallet and card reader']]},
+ {t:'Light and support',items:[
+  ['p20','Speedlight with spare batteries','not:concert'],['p21','Diffuser or bounce card','not:concert'],
+  ['p22','Off-camera flash trigger, light stand and umbrella','type:wedding,party,corporate'],
+  ['p23','LED video light','video'],['p24','Colour gels (CTO) for warm venue light','indoor'],
+  ['p25','Reflector (5-in-1)','outdoor'],['p26','Tripod or monopod'],['p27','Camera strap or dual harness']]},
+ {t:'Video and audio',items:[
+  ['p30','Gimbal or fluid-head tripod'],['p31','ND filters for bright light'],['p32','Shotgun or lavalier mic, with spare batteries'],
+  ['p33','Audio recorder as backup for speeches and vows'],['p34','Headphones'],['p35','Extra cards or SSD for video files']].map(function(x){return x.concat('video')})},
+ {t:'Drone',items:[
+  ['p40','Drone, controller, 3 charged batteries, spare propellers'],['p41','Flight permission checked, safe launch spot found'],
+  ['p42','ND filters, landing pad, SD cards']].map(function(x){return x.concat('drone')})},
+ {t:'Bag essentials',items:[
+  ['p50','Cleaning kit: blower, microfibre cloths, lens pen'],['p51','Rain cover for camera and bag','outdoor'],
+  ['p52','Gaffer tape, marker, cable ties'],['p53','Torch or headlamp'],['p54','Laptop and portable SSD for on-site backup'],
+  ['p55','Printed contract, run-of-show and shot list'],['p56','Business cards, UPI QR or invoice copy']]},
+ {t:'Personal',items:[
+  ['p60','Water bottle and snacks'],['p61','Comfortable quiet shoes and dress-code clothes, spare shirt'],
+  ['p62','Personal medicines, first aid, sanitizer'],['p63','Sunscreen, cap, mosquito repellent','outdoor'],
+  ['p64','ID, cash, small pouch for valuables']]}
+],
+prep:[
+ {t:'Client and paperwork',items:[
+  ['q1','Contract or booking confirmation signed'],['q2','Advance payment received'],['q3','Run-of-show received'],
+  ['q4','Must-have shots and VIP list agreed (see Details)'],['q5','Usage rights and photo release agreed'],
+  ['q6','Venue permission for tripod, flash and lights'],['q7','Drone permit checked','drone'],
+  ['q8','Entry passes arranged for you and your team'],['q9','Assistant or second shooter briefed','second']]},
+ {t:'Venue and light',items:[
+  ['q10','Venue visited, or photos and videos of it studied'],['q11','Light sources, ceiling colour and dark corners noted'],
+  ['q12','Power points and best vantage points found'],['q13','Sun position and a rain backup planned','outdoor'],
+  ['q14','Parking, vendor entry and route planned']]},
+ {t:'Gear check, day before',items:[
+  ['q20','Every body, lens, flash and mic tested once'],['q21','Sensor and lenses cleaned, dust-spot test shot taken'],
+  ['q22','Cards formatted in the camera'],['q23','All batteries and power banks charged'],
+  ['q24','Date and time set the same on every camera'],['q25','Custom modes saved: C1 bright, C2 low light, C3 flash'],
+  ['q26','Bag packed with the checklist inside'],['q27','Weather forecast checked','outdoor'],
+  ['q28','Time, venue and contact reconfirmed with the client'],['q29','Alarm set, early night']]}
+],
+day:[
+ {t:'On arrival',items:[
+  ['d1','Met the main contact and confirmed the schedule'],['d2','Walked the venue: light, stage, exits'],
+  ['d3','Details shot early: decor, signage, tables, branding'],['d4','Flash and lights set before guests arrive'],
+  ['d5','Test shots taken, focus and histogram checked']]},
+ {dyn:'moments'},
+ {dyn:'custom'},
+ {t:'During the event',items:[
+  ['d10','Wide, medium and close shot of every key moment'],['d11','Reactions of family, guests or audience'],
+  ['d12','Group photos with 3 or more frames each'],['d13','Backgrounds checked: exit signs, clutter, bright windows'],
+  ['d14','Histogram checked in quiet moments'],['d15','Cards rotated at natural breaks'],
+  ['d16','Silent shutter during ceremonies and speeches'],['d17','Audio levels checked with headphones','video'],
+  ['d18','Aerial shots taken where allowed','drone']]},
+ {t:'Etiquette',items:[
+  ['d20','No flash where it is not allowed'],['d21','Asked before photographing children and private moments'],
+  ['d22','Phone on silent, no drinking while working']]},
+ {t:'Before leaving',items:[
+  ['d30','Client confirmed all must-have shots are done'],['d31','Last shots taken: farewell, closing, group'],
+  ['d32','Cards backed up on site, if possible'],['d33','Gear counted: lenses, flashes, batteries, cables, caps, cards'],
+  ['d34','Balance payment collected, or next date agreed']]}
+],
+after:[
+ {t:'Same day or next day',items:[
+  ['a1','Files copied to two drives, plus cloud if possible'],['a2','File count verified against the cards'],
+  ['a3','Gear recharged, cleaned and stored'],['a4','Cards kept until delivery is complete']]},
+ {t:'Editing and delivery',items:[
+  ['a10','Culled: blinks, blur, duplicates'],['a11','Edited with one consistent style'],
+  ['a12','Sneak peek sent within 24 to 48 hours'],['a13','Final exports made for web and print'],
+  ['a14','Video or highlights reel edited and exported','video'],['a15','Delivered by the agreed method, link tested']]},
+ {t:'Close-out',items:[
+  ['a20','Final invoice sent'],['a21','Balance payment received'],['a22','Feedback or testimonial requested'],
+  ['a23','Permission to post the work confirmed'],['a24','Project archived, backups kept for at least a year']]}
+]};
+var TABS=[['details','Details'],['pack','Pack'],['prep','Prepare'],['day','Event day'],['after','After'],['record','Record']];
+var STAGES=['pack','prep','day','after'];
+var STAGE_NAME={pack:'Pack',prep:'Prepare',day:'Event day',after:'After'};
+var TYPE_OPTS=[['wedding','Wedding'],['corporate','Corporate event'],['party','Birthday / family party'],['concert','Concert / stage show'],['conference','Conference / seminar'],['other','Other']];
+
+/* ---------- state ---------- */
+var KEY='eventShootLog.v1';
+var store={cur:null,recs:{}};
+var tab='details';
+var persisted=true;
+function load(){try{var s=localStorage.getItem(KEY);if(s){var o=JSON.parse(s);if(o&&o.recs)store=o}}catch(e){}}
+function persist(){try{localStorage.setItem(KEY,JSON.stringify(store));persisted=true}catch(e){persisted=false}}
+function newRec(){var id='e'+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);store.recs[id]={id:id,created:Date.now(),a:{type:''},c:{},custom:[]};store.cur=id;persist();return store.recs[id]}
+function S(){return store.recs[store.cur]}
+load();
+if(!store.studio)store.studio={name:'SK WEDS',address:'Vakil Nagarajan Street, Kuttai Thidal, Udumalaipettai Municipality, Tamil Nadu 642126'};
+if(!store.cur||!store.recs[store.cur]){var ids=Object.keys(store.recs);if(ids.length){store.cur=ids[ids.length-1]}else{newRec()}}
+
+/* ---------- logic ---------- */
+function vis(c,a){
+  if(!c)return true;
+  var p=c.split(':'),k=p[0],v=p[1]?p[1].split(','):[];
+  switch(k){
+    case 'video':return !!a.video;case 'drone':return !!a.drone;case 'second':return !!a.second;
+    case 'outdoor':return !!a.outdoor;case 'indoor':return !a.outdoor;
+    case 'type':return v.indexOf(a.type||'')>-1;case 'not':return v.indexOf(a.type||'')<0;
+  }
+  return true;
+}
+function groupsFor(stage,s){
+  var a=s.a,out=[];
+  GROUPS[stage].forEach(function(g){
+    if(g.dyn==='moments'){
+      var T=TYPES[a.type||''];
+      out.push({key:'moments',t:'Key moments: '+T.label,items:T.moments.map(function(m,i){return {id:'m:'+(a.type||'x')+':'+i,t:m}})});
+    }else if(g.dyn==='custom'){
+      out.push({key:'custom',custom:true,t:'Your extra shots',items:s.custom.map(function(x){return {id:x.id,t:x.t,custom:true}})});
+    }else{
+      var items=g.items.filter(function(it){return vis(it[2],a)}).map(function(it){return {id:it[0],t:it[1]}});
+      if(items.length)out.push({key:g.t,t:g.t,items:items});
+    }
+  });
+  return out;
+}
+function itemsFor(stage,s){var r=[];groupsFor(stage,s).forEach(function(g){r=r.concat(g.items)});return r}
+function counts(stage,s){var it=itemsFor(stage,s),d=0;it.forEach(function(x){if(s.c[x.id])d++});return [d,it.length]}
+function num(v){return (v===''||v==null||!isFinite(+v))?null:+v}
+function money(n){return n==null?'':'₹'+n.toLocaleString('en-IN')}
+function fmtDate(d){if(!d)return '';var x=new Date(d+'T00:00:00');return isNaN(x)?d:x.toLocaleDateString('en-IN',{weekday:'short',day:'numeric',month:'short',year:'numeric'})}
+function fmtTime(t){if(!t)return '';var p=t.split(':'),h=+p[0],m=p[1];if(isNaN(h))return t;return ((h%12)||12)+':'+m+' '+(h>=12?'pm':'am')}
+function hoursBetween(a,b){if(!a||!b)return '';var x=a.split(':'),y=b.split(':');var d=(+y[0]*60+ +y[1])-(+x[0]*60+ +x[1]);if(d<=0)d+=1440;return +(d/60).toFixed(1)}
+function slug(t){return String(t||'event').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'event'}
+
+/* ---------- form pieces ---------- */
+function F(s,o){
+  var v=s.a[o.k]==null?'':s.a[o.k],id='f-'+o.k,ctl;
+  if(o.type==='area')ctl='<textarea id="'+id+'" data-k="'+o.k+'" rows="'+(o.rows||3)+'" placeholder="'+esc(o.ph||'')+'">'+esc(v)+'</textarea>';
+  else if(o.type==='select')ctl='<select id="'+id+'" data-k="'+o.k+'"><option value="">Choose</option>'+o.opts.map(function(x){var val=Array.isArray(x)?x[0]:x,lab=Array.isArray(x)?x[1]:x;return '<option value="'+esc(val)+'"'+(v===val?' selected':'')+'>'+esc(lab)+'</option>'}).join('')+'</select>';
+  else ctl='<input id="'+id+'" data-k="'+o.k+'" type="'+(o.type||'text')+'" value="'+esc(v)+'" placeholder="'+esc(o.ph||'')+'"'+(o.type==='number'?' inputmode="decimal" min="0"':'')+'>';
+  return '<div class="f'+(o.wide?' wide':'')+'"><label for="'+id+'">'+esc(o.label)+(o.unit?'<i>'+esc(o.unit)+'</i>':'')+'</label>'+ctl+'</div>';
+}
+function grid(s,list){return '<div class="grid">'+list.map(function(o){return F(s,o)}).join('')+'</div>'}
+function checklist(stage,s){
+  return groupsFor(stage,s).map(function(g){
+    var d=0;g.items.forEach(function(x){if(s.c[x.id])d++});
+    var body=g.items.map(function(x){
+      return '<label class="item"><input type="checkbox" data-c="'+esc(x.id)+'"'+(s.c[x.id]?' checked':'')+'><span>'+esc(x.t)+'</span>'+(x.custom?'<button type="button" class="rm" data-rm="'+esc(x.id)+'" aria-label="Remove '+esc(x.t)+'">Remove</button>':'')+'</label>';
+    }).join('');
+    var add=g.custom?'<div class="addrow noprint"><input type="text" id="newShot" placeholder="Add a shot, e.g. Grandparents together"><button type="button" class="btn ghost" id="addShot">Add</button></div>':'';
+    return '<section class="grp"><div class="grp-h"><h3>'+esc(g.t)+'</h3><span class="n'+(g.items.length&&d===g.items.length?' full':'')+'" data-n>'+d+'/'+g.items.length+'</span></div>'+body+add+'</section>';
+  }).join('');
+}
+function navButtons(i){
+  var prev=i>0?'<button type="button" class="btn ghost" data-go="'+TABS[i-1][0]+'">Back: '+TABS[i-1][1]+'</button>':'<span></span>';
+  var next=i<TABS.length-1?'<button type="button" class="btn" data-go="'+TABS[i+1][0]+'">Next: '+TABS[i+1][1]+'</button>':'';
+  return '<div class="nav noprint">'+prev+next+'</div>';
+}
+function savedLine(){return '<p class="saved noprint">'+(persisted?'Answers save automatically in this browser.':'This browser blocked saving. Use Save record on the Record tab before you leave.')+'</p>'}
+
+/* ---------- panels ---------- */
+function panelHTML(s){
+  var i=TABS.map(function(t){return t[0]}).indexOf(tab),h='';
+  var chip=function(k,l){return '<button type="button" class="chip" data-tog="'+k+'" aria-pressed="'+(!!s.a[k])+'">'+l+'</button>'};
+  if(tab==='details'){
+    h='<h2>Event details</h2><p class="lead">Fill this in once. The event type and coverage choices decide which items show on the next tabs.</p>'
+     +'<div class="sect"><h3>Studio</h3><p>Printed at the top of every record.</p></div>'
+     +'<div class="grid"><div class="f wide"><label for="st-name">Studio name</label><input id="st-name" data-st="name" type="text" value="'+esc(store.studio.name)+'"></div>'
+     +'<div class="f wide"><label for="st-address">Studio address</label><textarea id="st-address" data-st="address" rows="2">'+esc(store.studio.address)+'</textarea></div></div>'
+     +'<div class="sect"><h3>Event</h3></div>'
+     +grid(s,[
+       {k:'eventName',label:'Event name',ph:'e.g. Priya and Arun wedding',wide:true},
+       {k:'type',label:'Event type',type:'select',opts:TYPE_OPTS},
+       {k:'date',label:'Date',type:'date'},
+       {k:'starts',label:'Event starts',type:'time'},
+       {k:'ends',label:'Event ends',type:'time'},
+       {k:'venue',label:'Venue and address',wide:true,ph:'Hall name, area, city'}])
+     +'<div class="sect"><h3>Coverage</h3></div><div class="chips">'+chip('video','Video')+chip('drone','Drone')+chip('second','Second shooter')+chip('outdoor','Outdoor')+'</div>'
+     +'<p class="hint">Photo is always included. Turn on what applies; matching gear and tasks appear on the other tabs.</p>'
+     +'<div class="sect"><h3>Client</h3></div>'
+     +grid(s,[{k:'clientName',label:'Client name'},{k:'clientPhone',label:'Client phone',type:'tel'},{k:'backup',label:'Backup contact on the day (name and phone)',wide:true}])
+     +'<div class="sect"><h3>Deliverables and payment</h3></div>'
+     +grid(s,[
+       {k:'deliverables',label:'What you will deliver',type:'area',rows:2,wide:true,ph:'e.g. 400 edited photos, 3 min highlight reel'},
+       {k:'delivery',label:'Delivery method',type:'select',opts:['Online gallery link','Cloud drive link','Pen drive or hard disk','Printed album and soft copies']},
+       {k:'turnaround',label:'Turnaround',type:'number',unit:'days'},
+       {k:'fee',label:'Total fee',type:'number',unit:'₹'},
+       {k:'advance',label:'Advance received',type:'number',unit:'₹'}])
+     +'<div class="sect"><h3>Shot brief</h3></div>'
+     +grid(s,[
+       {k:'mustShots',label:'Must-have shots, key people and VIPs',type:'area',wide:true,ph:'Names, relationships, who must be in each group photo'},
+       {k:'restrictions',label:'Restrictions',type:'area',rows:2,wide:true,ph:'No flash in the temple, no-photo guests, cultural rules'}]);
+  }else if(tab==='pack'){
+    h='<h2>Pack the bag</h2><p class="lead">Tick items as they go into the bag. The list follows your event type and coverage.</p>'+checklist('pack',s);
+  }else if(tab==='prep'){
+    h='<h2>Prepare</h2><p class="lead">Paperwork, venue and gear checks, then the camera plan you will start with.</p>'+checklist('prep',s)
+     +'<div class="sect"><h3>Venue light and camera plan</h3></div>'
+     +grid(s,[
+       {k:'lightNotes',label:'Venue light notes',type:'area',rows:2,wide:true,ph:'Window side, ceiling height and colour, dark corners, stage lighting'},
+       {k:'mode',label:'Shooting mode',type:'select',opts:['Aperture priority','Manual','Shutter priority','Program']},
+       {k:'isoMax',label:'ISO limit',type:'number',unit:'max ISO',ph:'6400'},
+       {k:'minShutter',label:'Slowest shutter',type:'select',opts:['1/60 s','1/125 s','1/200 s','1/250 s','1/500 s']},
+       {k:'wb',label:'White balance',type:'select',opts:['Auto','Daylight','Tungsten','Fluorescent','Flash','Custom Kelvin']},
+       {k:'fileFormat',label:'File format',type:'select',opts:['RAW','RAW + JPEG','JPEG']},
+       {k:'afMode',label:'Autofocus',type:'select',opts:['Continuous AF with eye detect','Single AF','Back-button focus']},
+       {k:'shutterMode',label:'Shutter type',type:'select',opts:['Mechanical','Electronic (silent)','Mixed']}]
+       .concat(s.a.video?[{k:'videoMode',label:'Video format',type:'select',opts:['4K 25 fps','4K 30 fps','4K 50/60 fps','1080p 50/60 fps']}]:[]));
+  }else if(tab==='day'){
+    h='<h2>Event day</h2><p class="lead">Work down the list. Key moments follow the event type; add your own shots below them.</p>'+checklist('day',s)
+     +'<div class="sect"><h3>Day log</h3></div>'
+     +grid(s,[
+       {k:'arrivedAt',label:'You arrived',type:'time'},{k:'leftAt',label:'You finished',type:'time'},
+       {k:'cardsUsed',label:'Cards used',type:'number'},{k:'frames',label:'Approx. frames shot',type:'number'},
+       {k:'issues',label:'Issues on the day',type:'area',rows:2,wide:true,ph:'Late start, flash banned, card error, power cut'}]);
+  }else if(tab==='after'){
+    var r=['1','2','3','4','5'].map(function(n){return '<button type="button" class="chip" data-rate="'+n+'" aria-pressed="'+(s.a.rating===n)+'">'+n+'</button>'}).join('');
+    h='<h2>After the shoot</h2><p class="lead">Back up first, then edit, deliver and close out.</p>'+checklist('after',s)
+     +'<div class="sect"><h3>Delivery and debrief</h3></div>'
+     +grid(s,[
+       {k:'backupA',label:'Backup copy 1 location',ph:'e.g. SSD 1, home shelf'},{k:'backupB',label:'Backup copy 2 location',ph:'e.g. cloud folder'},
+       {k:'deliveredOn',label:'Delivered on',type:'date'},{k:'balanceIn',label:'Balance received',type:'number',unit:'₹'}])
+     +'<div class="f" style="margin:6px 0 14px"><label>Client rating</label><div class="chips">'+r+'</div></div>'
+     +grid(s,[
+       {k:'feedback',label:'Client feedback',type:'area',rows:2,wide:true},
+       {k:'wentWell',label:'What went well',type:'area',rows:2,wide:true},
+       {k:'improve',label:'Improve next time',type:'area',rows:2,wide:true}]);
+  }else{
+    var m=model(s);
+    h='<h2>Event record</h2><p class="lead">Everything you entered, laid out as one printable page.</p>'
+     +'<div class="rec-actions noprint"><button type="button" class="btn" id="btnPdf">Save as PDF</button><button type="button" class="btn ghost" id="btnSave">Save HTML file</button><button type="button" class="btn ghost" id="btnCopy">Copy as text</button><button type="button" class="btn ghost" id="btnNew">New event</button><button type="button" class="btn danger" id="btnDel">Delete this event</button></div>'
+     +'<p class="hint noprint">The PDF is A4 and ready to print or send. The HTML file can be printed from any browser with Ctrl or Cmd + P.</p>'
+     +'<div id="copyWrap" class="noprint" hidden><textarea id="copyBox" class="copybox" readonly></textarea></div>'
+     +'<div class="paper"><div class="doc">'+docHTML(m)+'</div></div>';
+  }
+  return h+(tab==='record'?'':navButtons(i))+(tab==='record'?'':savedLine());
+}
+
+/* ---------- record model ---------- */
+function model(s){
+  var a=s.a,T=TYPES[a.type||''];
+  var cov=['Photo'].concat(a.video?['Video']:[],a.drone?['Drone']:[],a.second?['Second shooter']:[]);
+  var hrs=hoursBetween(a.starts,a.ends),fee=num(a.fee),adv=num(a.advance);
+  var sec=[];
+  sec.push({t:'Event',rows:[['Event',a.eventName],['Type',a.type?T.label:''],['Date',fmtDate(a.date)],
+    ['Time',(a.starts||a.ends)?fmtTime(a.starts)+' to '+fmtTime(a.ends)+(hrs?' ('+hrs+' h)':''):''],
+    ['Venue',a.venue],['Setting',a.outdoor?'Outdoor':'Indoor'],['Coverage',cov.join(', ')]]});
+  sec.push({t:'Client',rows:[['Client',a.clientName],['Phone',a.clientPhone],['Backup contact',a.backup]]});
+  sec.push({t:'Deliverables and payment',rows:[['Deliverables',a.deliverables],['Delivery method',a.delivery],
+    ['Turnaround',a.turnaround?a.turnaround+' days':''],['Total fee',money(fee)],['Advance received',money(adv)],
+    ['Balance due',(fee!=null&&adv!=null)?money(fee-adv):''],['Balance received',money(num(a.balanceIn))]]});
+  sec.push({t:'Shot brief',rows:[['Must-have shots and VIPs',a.mustShots],['Restrictions',a.restrictions]]});
+  var shots=[];groupsFor('day',s).forEach(function(g){if(g.key==='moments'||g.key==='custom')g.items.forEach(function(x){shots.push([!!s.c[x.id],x.t])})});
+  sec.push({t:'Key moments',shots:shots});
+  var cam=[['Venue light notes',a.lightNotes],['Shooting mode',a.mode],['ISO limit',a.isoMax?'up to '+a.isoMax:''],['Slowest shutter',a.minShutter],
+    ['White balance',a.wb],['File format',a.fileFormat],['Autofocus',a.afMode],['Shutter type',a.shutterMode]];
+  if(a.video)cam.push(['Video format',a.videoMode]);
+  sec.push({t:'Camera plan',rows:cam});
+  sec.push({t:'Day log',rows:[['Arrived',fmtTime(a.arrivedAt)],['Finished',fmtTime(a.leftAt)],['Cards used',a.cardsUsed],['Approx. frames',a.frames],['Issues',a.issues]]});
+  var stg=STAGES.map(function(k){var it=itemsFor(k,s),c=counts(k,s);return {name:STAGE_NAME[k],done:c[0],total:c[1],pending:it.filter(function(x){return !s.c[x.id]}).map(function(x){return x.t})}});
+  sec.push({t:'Checklist status',stages:stg});
+  sec.push({t:'Delivery and debrief',rows:[['Backup copy 1',a.backupA],['Backup copy 2',a.backupB],['Delivered on',fmtDate(a.deliveredOn)],
+    ['Client rating',a.rating?a.rating+' of 5':''],['Client feedback',a.feedback],['What went well',a.wentWell],['Improve next time',a.improve]]});
+  var sub=[a.type?T.label:'',fmtDate(a.date),a.venue].filter(Boolean).join('  ·  ');
+  return {studio:store.studio,title:a.eventName||'Untitled event',sub:sub,sec:sec,stamp:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})};
+}
+function cell(v){return (v===''||v==null)?'<span class="none">—</span>':esc(v).replace(/\n/g,'<br>')}
+function docHTML(m){
+  var h='<div class="letter"><b>'+esc(m.studio.name)+'</b><span>'+esc(m.studio.address)+'</span></div><div class="kicker">Event record</div><h1>'+esc(m.title)+'</h1><div class="sub">'+esc(m.sub||'Details not filled in yet')+'</div>';
+  m.sec.forEach(function(x){
+    h+='<section class="seg"><h2>'+esc(x.t)+'</h2>';
+    if(x.rows)h+='<table class="kv">'+x.rows.map(function(r){return '<tr><th>'+esc(r[0])+'</th><td>'+cell(r[1])+'</td></tr>'}).join('')+'</table>';
+    if(x.shots)h+=x.shots.length?'<ul class="shots">'+x.shots.map(function(r){return '<li><span class="bx">'+(r[0]?'✓':'')+'</span>'+esc(r[1])+'</li>'}).join('')+'</ul>':'<p class="none">No shots listed.</p>';
+    if(x.stages)h+=x.stages.map(function(g){return '<div class="stg"><b>'+esc(g.name)+'</b> <span class="cnt">'+g.done+' of '+g.total+' done</span>'+(g.pending.length?'<div class="pend">Not done: '+esc(g.pending.join('; '))+'</div>':'')+'</div>'}).join('');
+    h+='</section>';
+  });
+  h+='<section class="seg"><div class="sign"><div>Photographer signature and date</div><div>Client signature and date</div></div><p class="stamp">Record created '+esc(m.stamp)+' from Event Shoot Log</p></section>';
+  return h;
+}
+function docText(m){
+  var t=[m.studio.name,m.studio.address,'',m.title.toUpperCase(),m.sub,''];
+  m.sec.forEach(function(x){
+    t.push('== '+x.t+' ==');
+    if(x.rows)x.rows.forEach(function(r){t.push(r[0]+': '+((r[1]===''||r[1]==null)?'-':String(r[1]).replace(/\n/g,' / ')))});
+    if(x.shots)x.shots.forEach(function(r){t.push((r[0]?'[x] ':'[ ] ')+r[1])});
+    if(x.stages)x.stages.forEach(function(g){t.push(g.name+': '+g.done+' of '+g.total+' done'+(g.pending.length?'. Not done: '+g.pending.join('; '):''))});
+    t.push('');
+  });
+  t.push('Record created '+m.stamp+' from Event Shoot Log');
+  return t.join('\n');
+}
+var DOC_CSS='.doc{font-family:var(--body);color:var(--ink);font-size:13px;line-height:1.5}'
++'.doc .letter{border-bottom:2px solid var(--ink);padding-bottom:10px;margin-bottom:18px}'
++'.doc .letter b{display:block;font:700 18px/1.2 var(--display);letter-spacing:.05em}'
++'.doc .letter span{display:block;color:var(--muted);font-size:12px;margin-top:3px;overflow-wrap:anywhere}'
++'.pdfroot ul.shots{columns:auto;display:grid;grid-template-columns:1fr 1fr;column-gap:28px}'
++'.doc .kicker{font:500 11px var(--mono);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}'
++'.doc h1{font:700 28px/1.15 var(--display);letter-spacing:-.01em;margin:4px 0 2px;overflow-wrap:anywhere}'
++'.doc .sub{color:var(--muted);font-size:13px}'
++'.doc h2{font:500 11px var(--mono);letter-spacing:.12em;text-transform:uppercase;border-bottom:1.5px solid var(--ink);padding-bottom:4px;margin:22px 0 6px;color:var(--ink)}'
++'.doc table.kv{width:100%;border-collapse:collapse}'
++'.doc .kv th{width:32%;text-align:left;font-weight:500;color:var(--muted);vertical-align:top;padding:5px 12px 5px 0;border-bottom:1px solid var(--line)}'
++'.doc .kv td{padding:5px 0;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}'
++'.doc .none{color:var(--muted)}'
++'.doc ul.shots{list-style:none;margin:6px 0 0;padding:0;columns:2;column-gap:28px}'
++'.doc .shots li{display:flex;gap:8px;align-items:flex-start;padding:3px 0;break-inside:avoid}'
++'.doc .bx{flex:0 0 15px;width:15px;height:15px;border:1.2px solid var(--ink);border-radius:3px;font-size:11px;line-height:13px;text-align:center;margin-top:2px}'
++'.doc .stg{padding:5px 0;border-bottom:1px solid var(--line)}'
++'.doc .cnt{font:500 12px var(--mono);color:var(--muted);margin-left:6px}'
++'.doc .pend{color:var(--muted);margin-top:2px}'
++'.doc .sign{display:grid;grid-template-columns:1fr 1fr;gap:36px;margin-top:44px}'
++'.doc .sign div{border-top:1px solid var(--ink);padding-top:4px;font-size:11px;color:var(--muted)}'
++'.doc .stamp{font:500 11px var(--mono);color:var(--muted);margin:18px 0 0}'
++'@media (max-width:560px){.doc .kv th{width:40%}.doc ul.shots{columns:1}}'
++'@media print{.doc h2{break-after:avoid}.doc .seg,.doc .sign,.doc .stg,.doc tr{break-inside:avoid;page-break-inside:avoid}}';
+var st=document.createElement('style');st.textContent=DOC_CSS;document.head.appendChild(st);
+
+/* ---------- file save, copy ---------- */
+function fileHTML(m){
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+esc(m.title)+' record</title>'
+  +'<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@700&family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@500&display=swap">'
+  +'<style>:root{--ink:#141C17;--muted:#58645C;--line:#D2D9D3;--display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;--body:"IBM Plex Sans","Segoe UI",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}'
+  +'body{margin:0;background:#fff}.page{max-width:780px;margin:0 auto;padding:32px 24px}@page{margin:14mm}'+DOC_CSS+'.tb{position:sticky;top:0;background:#fff;border-bottom:1px solid #D2D9D3;padding:10px 24px;display:flex;gap:12px;align-items:center;flex-wrap:wrap;font:14px var(--body);color:#141C17}.tb button{background:#0E6B5A;color:#fff;border:0;border-radius:8px;padding:10px 16px;font:600 14px var(--body);cursor:pointer}.tb span{color:#58645C;font-size:13px}@media print{.tb{display:none}}</style></head><body><div class="tb"><button type="button" onclick="window.print()">Print / Save as PDF</button><span>In the print window, choose Save as PDF as the destination.</span></div><div class="page"><div class="doc">'+docHTML(m)+'</div></div></body></html>';
+}
+var toastT;
+function toast(msg){var t=$('#toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(function(){t.hidden=true},2600)}
+function saveRecord(){
+  var s=S(),m=model(s),name=slug(s.a.eventName)+'-'+(s.a.date||new Date().toISOString().slice(0,10))+'-record.html';
+  if(!window.claude||!window.claude.use){toast('Saving files is not available here. Use Copy as text.');return}
+  window.claude.use('downloads').then(function(dl){
+    if(!dl){toast('Saving files is not available here. Use Copy as text.');return}
+    dl.save({filename:name,data:fileHTML(m)}).then(function(){toast('Record saved')}).catch(function(e){
+      if(e&&e.code==='declined')return;
+      toast('Could not save the file. Use Copy as text.');
+    });
+  }).catch(function(){toast('Saving files is not available here. Use Copy as text.')});
+}
+function pdfBlob(m){
+  var H2C=window.html2canvas,J=window.jspdf&&window.jspdf.jsPDF;
+  if(!H2C||!J)return Promise.reject({code:'nolib'});
+  var W=794,PW=595.28,PH=841.89,MX=28,MT=28,MB=40,k=(PW-MX*2)/W;
+  var root=document.createElement('div');root.id='pdfRoot';root.className='pdfroot';
+  root.style.cssText='position:fixed;left:-10000px;top:0;width:'+W+'px;background:#fff;--ink:#141C17;--muted:#58645C;--line:#D2D9D3';
+  root.innerHTML='<div class="doc">'+docHTML(m)+'</div>';
+  document.body.appendChild(root);
+  var cleanup=function(){if(root.parentNode)root.parentNode.removeChild(root)};
+  var ready=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+  return ready.then(function(){
+    var top=root.getBoundingClientRect().top,total=root.scrollHeight,atoms=[];
+    root.querySelectorAll('tr, li, .stg').forEach(function(el){atoms.push(el.getBoundingClientRect().bottom-top)});
+    var segs=[];root.querySelectorAll('.seg').forEach(function(el){var r=el.getBoundingClientRect();segs.push({t:r.top-top,b:r.bottom-top})});
+    var pageH=(PH-MT-MB)/k,cuts=[0];
+    while(cuts[cuts.length-1]<total-1){
+      var start=cuts[cuts.length-1],limit=start+pageH;
+      if(total<=limit){cuts.push(total);break}
+      var cut=0;
+      for(var q=1;q<segs.length;q++){if(segs[q-1].b<=limit&&segs[q].t>start+pageH*0.2&&segs[q].t>cut)cut=segs[q].t}
+      if(!cut)atoms.forEach(function(b){if(b>start+pageH*0.4&&b<=limit&&b>cut)cut=b});
+      cuts.push(cut||limit);
+    }
+    return H2C(root,{scale:2,backgroundColor:'#ffffff',logging:false,windowWidth:W,onclone:function(d){var r=d.getElementById('pdfRoot');if(r){r.style.left='0';r.style.position='absolute'}}}).then(function(canvas){
+      var pdf=new J({unit:'pt',format:'a4',orientation:'portrait'}),n=cuts.length-1;
+      var safe=function(s){return String(s||'').replace(/[^\x20-\x7E]/g,'')};
+      for(var i=0;i<n;i++){
+        var sy=Math.round(cuts[i]*2),sh=Math.round((cuts[i+1]-cuts[i])*2);
+        var tmp=document.createElement('canvas');tmp.width=canvas.width;tmp.height=sh;
+        var cx=tmp.getContext('2d');cx.fillStyle='#fff';cx.fillRect(0,0,tmp.width,sh);cx.drawImage(canvas,0,sy,canvas.width,sh,0,0,canvas.width,sh);
+        if(i>0)pdf.addPage();
+        pdf.addImage(tmp.toDataURL('image/jpeg',0.92),'JPEG',MX,MT,PW-MX*2,sh/2*k);
+        pdf.setFont('helvetica','normal');pdf.setFontSize(8);pdf.setTextColor(110,120,114);
+        pdf.text(safe(m.studio.name)||'Event record',MX,PH-18);
+        pdf.text('Page '+(i+1)+' of '+n,PW-MX,PH-18,{align:'right'});
+      }
+      cleanup();
+      return pdf.output('blob');
+    });
+  }).catch(function(e){cleanup();throw e});
+}
+function savePDF(){
+  var s=S(),m=model(s),name=slug(s.a.eventName)+'-'+(s.a.date||new Date().toISOString().slice(0,10))+'-record.pdf';
+  if(!window.claude||!window.claude.use){toast('Saving files is not available here. Use Copy as text.');return}
+  toast('Preparing PDF...');
+  Promise.all([window.claude.use('downloads'),pdfBlob(m)]).then(function(r){
+    if(!r[0]){toast('Saving files is not available here. Use Copy as text.');return}
+    return r[0].save({filename:name,data:r[1]}).then(function(){toast('PDF saved')},function(e){if(!(e&&e.code==='declined'))toast('Could not save the PDF.')});
+  }).catch(function(e){toast(e&&e.code==='nolib'?'PDF tools did not load. Check your connection and try again.':'Could not make the PDF. Try Save HTML file.')});
+}
+function copyText(){
+  var txt=docText(model(S()));
+  var fallback=function(){var w=$('#copyWrap'),b=$('#copyBox');if(!w)return;w.hidden=false;b.value=txt;b.focus();b.select();toast('Select the text and copy it')};
+  try{navigator.clipboard.writeText(txt).then(function(){toast('Copied to clipboard')},fallback)}catch(e){fallback()}
+}
+
+/* ---------- render ---------- */
+function totals(s){var d=0,t=0;STAGES.forEach(function(k){var c=counts(k,s);d+=c[0];t+=c[1]});return [d,t]}
+function evLabel(r){return (r.a.eventName||'Untitled event')+(r.a.date?'  ·  '+r.a.date:'')}
+function renderBar(){
+  var s=S(),tt=totals(s);
+  $('#counter').innerHTML='Frame <b>'+tt[0]+'</b> / '+tt[1];
+  $('#meterFill').style.width=(tt[1]?Math.round(tt[0]/tt[1]*100):0)+'%';
+  $('#tabs').innerHTML=TABS.map(function(t){
+    var sub='';if(STAGES.indexOf(t[0])>-1){var c=counts(t[0],s);sub=c[0]+'/'+c[1]}
+    return '<button type="button" class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'"><span>'+t[1]+'</span><small>'+sub+'</small></button>';
+  }).join('');
+  var sel=$('#evSel');
+  sel.innerHTML=Object.keys(store.recs).map(function(id){return '<option value="'+id+'"'+(id===store.cur?' selected':'')+'>'+esc(evLabel(store.recs[id]))+'</option>'}).join('')+'<option value="__new">+ New event</option>';
+  var at=$('#tabs [aria-selected="true"]');if(at&&at.scrollIntoView)try{at.scrollIntoView({block:'nearest',inline:'nearest'})}catch(e){}
+}
+function renderPanel(keepScroll){
+  $('#panel').innerHTML=panelHTML(S());
+  if(!keepScroll)window.scrollTo(0,0);
+}
+function renderAll(keepScroll){renderBar();renderPanel(keepScroll)}
+function refreshCounts(){
+  document.querySelectorAll('.grp').forEach(function(g){
+    var boxes=g.querySelectorAll('input[data-c]'),d=0;boxes.forEach(function(b){if(b.checked)d++});
+    var n=g.querySelector('[data-n]');if(n){n.textContent=d+'/'+boxes.length;n.classList.toggle('full',boxes.length>0&&d===boxes.length)}
+  });
+  renderBar();
+}
+function goTo(t){tab=t;renderAll(false)}
+
+/* ---------- events ---------- */
+var panel=$('#panel');
+function setAnswer(el){
+  var s=S(),k=el.dataset.k;s.a[k]=el.value;persist();
+  if(k==='eventName'||k==='date'){var o=$('#evSel option[value="'+s.id+'"]');if(o)o.textContent=evLabel(s)}
+}
+panel.addEventListener('input',function(e){
+  var d=e.target.dataset;if(!d)return;
+  if(d.k)setAnswer(e.target);
+  else if(d.st){store.studio[d.st]=e.target.value;persist()}
+});
+panel.addEventListener('change',function(e){
+  var el=e.target;
+  if(el.dataset.k){setAnswer(el);if(el.dataset.k==='type')renderBar();return}
+  if(el.dataset.c){var s=S();if(el.checked)s.c[el.dataset.c]=true;else delete s.c[el.dataset.c];persist();refreshCounts()}
+});
+function addShot(){
+  var inp=$('#newShot');if(!inp)return;var v=inp.value.trim();if(!v)return;
+  var s=S();s.custom.push({id:'x'+Date.now().toString(36)+Math.floor(Math.random()*999),t:v});persist();renderAll(true);
+  var n=$('#newShot');if(n)n.focus();
+}
+var delArmed=false,delT;
+panel.addEventListener('click',function(e){
+  var t=e.target.closest('button');if(!t)return;
+  var s=S();
+  if(t.dataset.go){goTo(t.dataset.go);return}
+  if(t.dataset.tog){var k=t.dataset.tog;s.a[k]=!s.a[k];persist();t.setAttribute('aria-pressed',String(!!s.a[k]));renderBar();return}
+  if(t.dataset.rate){s.a.rating=(s.a.rating===t.dataset.rate)?'':t.dataset.rate;persist();panel.querySelectorAll('[data-rate]').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.rate===s.a.rating))});return}
+  if(t.dataset.rm){e.preventDefault();s.custom=s.custom.filter(function(x){return x.id!==t.dataset.rm});delete s.c[t.dataset.rm];persist();renderAll(true);return}
+  if(t.id==='addShot'){addShot();return}
+  if(t.id==='btnSave'){saveRecord();return}
+  if(t.id==='btnPdf'){savePDF();return}
+  if(t.id==='btnCopy'){copyText();return}
+  if(t.id==='btnNew'){newRec();tab='details';renderAll(false);toast('New event started');return}
+  if(t.id==='btnDel'){
+    if(!delArmed){delArmed=true;t.textContent='Click again to delete';clearTimeout(delT);delT=setTimeout(function(){delArmed=false;t.textContent='Delete this event'},4000);return}
+    delArmed=false;delete store.recs[s.id];var left=Object.keys(store.recs);
+    if(left.length){store.cur=left[left.length-1];persist()}else{newRec()}
+    tab='details';renderAll(false);toast('Event deleted');return;
+  }
+});
+panel.addEventListener('keydown',function(e){if(e.key==='Enter'&&e.target.id==='newShot'){e.preventDefault();addShot()}});
+$('#tabs').addEventListener('click',function(e){var t=e.target.closest('.tab');if(t)goTo(t.dataset.tab)});
+$('#evSel').addEventListener('change',function(e){
+  if(e.target.value==='__new'){newRec();tab='details'}else{store.cur=e.target.value;persist()}
+  renderAll(false);
+});
+
+renderAll(true);
+})();
+</script>
+</body>
+</html>
